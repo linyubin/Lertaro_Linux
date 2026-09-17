@@ -23,7 +23,7 @@ public sealed class LinuxIndexStoreTests
             var loaded = store.Load(indexPath);
 
             Assert.AreEqual(Path.GetFullPath(root), loaded.Root);
-            Assert.AreEqual(original.Entries.Count, loaded.Entries.Count);
+            Assert.HasCount(original.Entries.Count, loaded.Entries);
             CollectionAssert.AreEquivalent(
                 original.Entries.Select(entry => (entry.Path, entry.Name, entry.IsDirectory, entry.Size)).ToArray(),
                 loaded.Entries.Select(entry => (entry.Path, entry.Name, entry.IsDirectory, entry.Size)).ToArray());
