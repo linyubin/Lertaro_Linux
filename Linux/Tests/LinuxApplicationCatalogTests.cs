@@ -32,7 +32,7 @@ public sealed class LinuxApplicationCatalogTests
 
         var results = LinuxApplicationCatalog.Discover(new[] { _userData, _systemData });
 
-        Assert.AreEqual(2, results.Count);
+        Assert.HasCount(2, results);
         Assert.AreEqual("Alpha", results[0].Name);
         Assert.AreEqual("Zulu", results[1].Name);
         Assert.AreEqual("z-icon", results[1].Icon);
@@ -46,7 +46,7 @@ public sealed class LinuxApplicationCatalogTests
 
         var results = LinuxApplicationCatalog.Discover(new[] { _userData, _systemData });
 
-        Assert.AreEqual(0, results.Count);
+        Assert.IsEmpty(results);
     }
 
     [TestMethod]
