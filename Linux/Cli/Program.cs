@@ -13,6 +13,9 @@ try
             "daemon-status" => RunDaemonStatus(args),
             "daemon-rebuild" => RunDaemonCommand(args, "rebuild"),
             "daemon-shutdown" => RunDaemonCommand(args, "shutdown"),
+            "bookmark-list" => RunBookmarkList(args),
+            "bookmark-add" => RunBookmarkMutation(args, "bookmark-add"),
+            "bookmark-remove" => RunBookmarkMutation(args, "bookmark-remove"),
             "apps" => RunApplications(args),
             "app-launch" => RunApplicationLaunch(args),
             _ => RunDirectSearch(args)
@@ -96,6 +99,27 @@ static int RunDaemonCommand(string[] commandArgs, string command)
     return 0;
 }
 
+static int RunBookmarkList(string[] commandArgs)
+{
+    if (commandArgs.Length != 1) return Usage();
+    var response = CreateDaemonClient().Send(new LinuxDaemonRequest("bookmark-list"));
+    return PrintBookmarks(response);
+}
+
+static int RunBookmarkMutation(string[] commandArgs, string command)
+{
+    if (commandArgs.Length != 2) return Usage();
+    var response = CreateDaemonClient().Send(new LinuxDaemonRequest(command, Path: commandArgs[1]));
+    return PrintBookmarks(response);
+}
+
+static int PrintBookmarks(LinuxDaemonResponse response)
+{
+    if (!response.Ok) return PrintDaemonError(response);
+    foreach (var path in response.Bookmarks ?? []) Console.WriteLine(path);
+    return 0;
+}
+
 static int RunApplications(string[] commandArgs)
 {
     if (commandArgs.Length is < 1 or > 3) return Usage();
@@ -165,6 +189,8 @@ static int Usage()
     Console.Error.WriteLine("  lertaro-linux watch <index-file>");
     Console.Error.WriteLine("  lertaro-linux daemon-search <query> [limit]");
     Console.Error.WriteLine("  lertaro-linux daemon-status|daemon-rebuild|daemon-shutdown");
+    Console.Error.WriteLine("  lertaro-linux bookmark-list");
+    Console.Error.WriteLine("  lertaro-linux bookmark-add|bookmark-remove <path>");
     Console.Error.WriteLine("  lertaro-linux apps [query] [limit]");
     Console.Error.WriteLine("  lertaro-linux app-launch <desktop-file>");
     Console.Error.WriteLine("  lertaro-linux <root> <query> [limit]  # direct scan compatibility mode");
