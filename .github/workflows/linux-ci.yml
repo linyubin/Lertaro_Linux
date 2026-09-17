@@ -23,6 +23,8 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Build Linux CLI
         run: dotnet build Linux/Cli/Linux.Cli.csproj --configuration Release
+      - name: Build Linux daemon
+        run: dotnet build Linux/Daemon/Linux.Daemon.csproj --configuration Release
       - name: Run Linux tests
         run: dotnet test Linux/Tests/Linux.Tests.csproj --configuration Release --no-restore
       - name: Smoke test direct scan
@@ -36,3 +38,39 @@ jobs:
           printf 'report' > "$workspace/root/nested/calibration-report.txt"
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- index "$workspace/root" "$workspace/index.bin"
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- search "$workspace/index.bin" calrep 10 | grep 'calibration-report.txt'
+      - name: Smoke test daemon IPC and watcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$(mktemp -d)"
+          mkdir -p "$workspace/root"
+          printf 'report' > "$workspace/root/calibration-report.txt"
+          socket="$workspace/search.sock"
+          export LERTARO_SOCKET="$socket"
+          dotnet run --project Linux/Daemon/Linux.Daemon.csproj --configuration Release --no-build -- "$workspace/root" "$workspace/index.bin" "$socket" >"$workspace/daemon.log" 2>&1 &
+          daemon_pid=$!
+          trap 'kill "$daemon_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for _ in $(seq 1 100); do
+            if dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-status >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            sleep 0.05
+          done
+          test "$ready" -eq 1 || { cat "$workspace/daemon.log"; exit 1; }
+          dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-search calrep 10 | grep 'calibration-report.txt'
+          printf 'new' > "$workspace/root/new-sensor-log.txt"
+          found=0
+          for _ in $(seq 1 100); do
+            if dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-search newsensor 10 | grep -q 'new-sensor-log.txt'; then
+              found=1
+              break
+            fi
+            sleep 0.05
+          done
+          test "$found" -eq 1 || { cat "$workspace/daemon.log"; exit 1; }
+          dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-rebuild >/dev/null
+          dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-shutdown >/dev/null
+          wait "$daemon_pid"
+          trap - EXIT

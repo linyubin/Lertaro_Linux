@@ -9,10 +9,14 @@ try
             "index" => RunIndex(args),
             "search" => RunSearch(args),
             "watch" => RunWatch(args),
+            "daemon-search" => RunDaemonSearch(args),
+            "daemon-status" => RunDaemonStatus(args),
+            "daemon-rebuild" => RunDaemonCommand(args, "rebuild"),
+            "daemon-shutdown" => RunDaemonCommand(args, "shutdown"),
             _ => RunDirectSearch(args)
         };
 }
-catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException or InvalidDataException or UnauthorizedAccessException or IOException)
+catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException or InvalidDataException or UnauthorizedAccessException or IOException or System.Net.Sockets.SocketException)
 {
     Console.Error.WriteLine(ex.Message);
     return 1;
@@ -82,6 +86,71 @@ static int RunWatch(string[] commandArgs)
     }
 }
 
+static int RunDaemonSearch(string[] commandArgs)
+{
+    if (commandArgs.Length is < 2 or > 3)
+        return Usage();
+
+    var limit = ParseLimit(commandArgs, 2);
+    var response = CreateDaemonClient().Send(new LinuxDaemonRequest("search", commandArgs[1], limit));
+    if (!response.Ok)
+        return PrintDaemonError(response);
+
+    foreach (var result in response.Results ?? [])
+        Console.WriteLine($"{result.Score,6}  {result.Path}");
+    return 0;
+}
+
+static int RunDaemonStatus(string[] commandArgs)
+{
+    if (commandArgs.Length != 1)
+        return Usage();
+
+    var response = CreateDaemonClient().Send(new LinuxDaemonRequest("status"));
+    if (!response.Ok)
+        return PrintDaemonError(response);
+    if (response.Status is null)
+        throw new InvalidDataException("Daemon returned no status payload.");
+
+    PrintStatus(response.Status);
+    return 0;
+}
+
+static int RunDaemonCommand(string[] commandArgs, string command)
+{
+    if (commandArgs.Length != 1)
+        return Usage();
+
+    var response = CreateDaemonClient().Send(new LinuxDaemonRequest(command));
+    if (!response.Ok)
+        return PrintDaemonError(response);
+    if (response.Status is not null)
+        PrintStatus(response.Status);
+    return 0;
+}
+
+static LinuxDaemonClient CreateDaemonClient()
+{
+    var socketPath = Environment.GetEnvironmentVariable("LERTARO_SOCKET");
+    if (string.IsNullOrWhiteSpace(socketPath))
+        socketPath = LinuxDaemonPaths.CreateDefault().SocketPath;
+    return new LinuxDaemonClient(socketPath);
+}
+
+static void PrintStatus(LinuxDaemonStatus status)
+{
+    Console.WriteLine($"root={status.Root}");
+    Console.WriteLine($"index={status.IndexPath}");
+    Console.WriteLine($"entries={status.EntryCount}");
+    Console.WriteLine($"watcherError={status.WatcherError ?? string.Empty}");
+}
+
+static int PrintDaemonError(LinuxDaemonResponse response)
+{
+    Console.Error.WriteLine(response.Error ?? "Daemon request failed.");
+    return 1;
+}
+
 static int RunDirectSearch(string[] commandArgs)
 {
     if (commandArgs.Length is < 2 or > 3)
@@ -121,6 +190,9 @@ static int Usage()
     Console.Error.WriteLine("  lertaro-linux index <root> <index-file>");
     Console.Error.WriteLine("  lertaro-linux search <index-file> <query> [limit]");
     Console.Error.WriteLine("  lertaro-linux watch <index-file>");
+    Console.Error.WriteLine("  lertaro-linux daemon-search <query> [limit]");
+    Console.Error.WriteLine("  lertaro-linux daemon-status|daemon-rebuild|daemon-shutdown");
     Console.Error.WriteLine("  lertaro-linux <root> <query> [limit]  # direct scan compatibility mode");
+    Console.Error.WriteLine("Set LERTARO_SOCKET to override the default daemon socket path.");
     return 2;
 }

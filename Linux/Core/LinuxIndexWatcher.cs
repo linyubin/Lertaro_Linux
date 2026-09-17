@@ -3,6 +3,7 @@ namespace Lertaro.Linux.Core;
 public sealed class LinuxIndexWatcher : IDisposable
 {
     private readonly object _stateSync = new();
+    private readonly object _reconcileSync = new();
     private readonly LinuxMutableIndex _index;
     private readonly LinuxIndexStore _store;
     private readonly string _indexPath;
@@ -90,8 +91,14 @@ public sealed class LinuxIndexWatcher : IDisposable
 
     public void Reconcile()
     {
-        var rebuilt = LinuxIndexSnapshot.Build(_index.Root);
-        _index.ReplaceAll(rebuilt);
+        lock (_reconcileSync)
+        {
+            // Keep the watcher enabled while scanning. Event callbacks queue behind this same gate and
+            // are applied after the rebuilt snapshot, so changes arriving during the scan are not lost.
+            // If the OS queue itself overflows, FileSystemWatcher.Error schedules another reconciliation.
+            var rebuilt = LinuxIndexSnapshot.Build(_index.Root);
+            _index.ReplaceAll(rebuilt);
+        }
         ScheduleSave();
     }
 
@@ -155,7 +162,10 @@ public sealed class LinuxIndexWatcher : IDisposable
     {
         try
         {
-            if (update())
+            bool changed;
+            lock (_reconcileSync)
+                changed = update();
+            if (changed)
                 ScheduleSave();
         }
         catch (Exception ex) when (IsRecoverable(ex))

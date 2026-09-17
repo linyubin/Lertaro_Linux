@@ -1,0 +1,12 @@
+[Unit]
+Description=Lertaro Linux search daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/lib/lertaro/lertarod
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
