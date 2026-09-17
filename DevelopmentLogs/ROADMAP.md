@@ -1,6 +1,6 @@
 # Lertaro Linux port roadmap
 
-Date: 2026-09-17
+Date: 2026-09-18
 Branch: `linux-port`
 
 This file defines the ordered delivery plan. Each stage gets a numbered development log and its own automated validation before work advances.
@@ -17,7 +17,7 @@ Status: completed.
 
 ## Stage 2 — Persistent index
 
-Status: in progress.
+Status: completed.
 
 - versioned persistent index;
 - atomic writes and corruption checks;
@@ -25,6 +25,8 @@ Status: in progress.
 - integration tests across separate processes.
 
 ## Stage 3 — Incremental indexing
+
+Status: completed.
 
 - mutable in-memory catalog;
 - recursive `FileSystemWatcher`/inotify event ingestion;
@@ -35,6 +37,8 @@ Status: in progress.
 
 ## Stage 4 — User daemon and IPC
 
+Status: completed.
+
 - per-user background daemon rather than a privileged SYSTEM-equivalent service;
 - single-writer ownership of index state;
 - Unix-domain-socket request protocol;
@@ -44,6 +48,8 @@ Status: in progress.
 
 ## Stage 5 — Desktop search UI
 
+Status: completed.
+
 - Avalonia desktop application;
 - instant query/result interaction against daemon IPC;
 - keyboard navigation and result activation;
@@ -51,6 +57,8 @@ Status: in progress.
 - UI-independent view-model tests plus Linux build validation.
 
 ## Stage 6 — Linux shell integration
+
+Status: completed.
 
 - open files/directories through freedesktop-compatible mechanisms;
 - reveal selected files through `org.freedesktop.FileManager1` where available;
@@ -60,6 +68,8 @@ Status: in progress.
 
 ## Stage 7 — Search feature parity
 
+Status: in progress.
+
 - path-aware query terms and filters;
 - history/recent results;
 - bookmarks/favorites;
@@ -68,6 +78,8 @@ Status: in progress.
 - performance tuning using representative large synthetic indexes.
 
 ## Stage 8 — Packaging and release acceptance
+
+Status: not started.
 
 - self-contained x64 and arm64 Linux publish;
 - `.deb` packaging first, additional packaging only when justified;
