@@ -12,16 +12,25 @@ public static class LinuxFuzzySearch
         int limit = 50)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        ArgumentException.ThrowIfNullOrWhiteSpace(query);
         if (limit <= 0)
             throw new ArgumentOutOfRangeException(nameof(limit));
 
-        var pattern = query.ToLowerInvariant();
+        var parsed = LinuxSearchQuery.Parse(query);
+        var pattern = parsed.Text.ToLowerInvariant();
         var slab = new FzfSlab();
         var results = new List<LinuxSearchResult>();
 
         foreach (var entry in entries)
         {
+            if (!parsed.Matches(entry))
+                continue;
+
+            if (pattern.Length == 0)
+            {
+                results.Add(new LinuxSearchResult(entry, 0, 0));
+                continue;
+            }
+
             var match = FzfFuzzyMatcher.FuzzyMatchV2(
                 entry.Name.AsSpan(), pattern, caseSensitive: false, FzfScoringScheme.Default, slab);
             if (match.IsMatch)
