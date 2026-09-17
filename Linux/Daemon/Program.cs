@@ -12,13 +12,15 @@ try
     var root = Path.GetFullPath(args.ElementAtOrDefault(0) ?? defaults.Root);
     var indexPath = Path.GetFullPath(args.ElementAtOrDefault(1) ?? defaults.IndexPath);
     var socketPath = Path.GetFullPath(args.ElementAtOrDefault(2) ?? defaults.SocketPath);
+    var stateDirectory = Path.GetDirectoryName(indexPath) ?? defaults.StateDirectory;
+    var bookmarks = new LinuxBookmarks(Path.Combine(stateDirectory, "bookmarks.json"));
     var store = new LinuxIndexStore();
     var snapshot = LoadOrBuild(store, root, indexPath);
     var index = new LinuxMutableIndex(snapshot);
 
     using var watcher = new LinuxIndexWatcher(index, indexPath, store);
     watcher.Start();
-    await using var server = new LinuxDaemonServer(index, watcher, indexPath, socketPath);
+    await using var server = new LinuxDaemonServer(index, watcher, bookmarks, indexPath, socketPath);
     using var stopping = new CancellationTokenSource();
     ConsoleCancelEventHandler handler = (_, eventArgs) =>
     {
