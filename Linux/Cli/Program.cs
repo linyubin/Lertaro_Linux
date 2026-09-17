@@ -8,6 +8,7 @@ try
         {
             "index" => RunIndex(args),
             "search" => RunSearch(args),
+            "watch" => RunWatch(args),
             _ => RunDirectSearch(args)
         };
 }
@@ -50,6 +51,37 @@ static int RunSearch(string[] commandArgs)
     return 0;
 }
 
+static int RunWatch(string[] commandArgs)
+{
+    if (commandArgs.Length != 2)
+        return Usage();
+
+    var indexPath = commandArgs[1];
+    var store = new LinuxIndexStore();
+    var index = new LinuxMutableIndex(store.Load(indexPath));
+    using var watcher = new LinuxIndexWatcher(index, indexPath, store);
+    using var stopped = new ManualResetEventSlim();
+    ConsoleCancelEventHandler handler = (_, eventArgs) =>
+    {
+        eventArgs.Cancel = true;
+        stopped.Set();
+    };
+
+    Console.CancelKeyPress += handler;
+    try
+    {
+        watcher.Start();
+        Console.Error.WriteLine($"Watching {index.Root}. Press Ctrl+C to stop.");
+        stopped.Wait();
+        watcher.Stop();
+        return 0;
+    }
+    finally
+    {
+        Console.CancelKeyPress -= handler;
+    }
+}
+
 static int RunDirectSearch(string[] commandArgs)
 {
     if (commandArgs.Length is < 2 or > 3)
@@ -88,6 +120,7 @@ static int Usage()
     Console.Error.WriteLine("Usage:");
     Console.Error.WriteLine("  lertaro-linux index <root> <index-file>");
     Console.Error.WriteLine("  lertaro-linux search <index-file> <query> [limit]");
+    Console.Error.WriteLine("  lertaro-linux watch <index-file>");
     Console.Error.WriteLine("  lertaro-linux <root> <query> [limit]  # direct scan compatibility mode");
     return 2;
 }
