@@ -108,3 +108,34 @@ jobs:
             App) executable="lertaro-ui" ;;
           esac
           test -x "artifacts/${{ matrix.runtime }}/${{ matrix.project }}/$executable"
+
+  linux-deb:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [linux-x64, linux-arm64]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish package payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          for project in Cli Daemon App; do
+            dotnet publish "Linux/$project/Linux.$project.csproj" --configuration Release --runtime "${{ matrix.runtime }}" --self-contained true --output "artifacts/${{ matrix.runtime }}/$project"
+          done
+      - name: Build Debian package
+        shell: bash
+        run: bash Linux/Packaging/build-deb.sh "${{ matrix.runtime }}" 0.1.0 artifacts/deb
+      - name: Verify Debian package
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$(find artifacts/deb -name '*.deb' -print -quit)"
+          test -n "$package"
+          dpkg-deb --info "$package"
+          dpkg-deb --contents "$package" | grep 'usr/lib/lertaro/lertarod'
+          dpkg-deb --contents "$package" | grep 'usr/lib/systemd/user/lertaro.service'
+          dpkg-deb --contents "$package" | grep 'usr/share/applications/lertaro.desktop'
