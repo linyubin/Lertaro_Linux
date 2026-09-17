@@ -11,6 +11,12 @@ public static class LinuxDesktopActions
         StartRequired(startInfo);
     }
 
+    public static void LaunchApplication(string desktopFile)
+    {
+        var startInfo = BuildLaunchApplicationStartInfo(desktopFile);
+        StartRequired(startInfo);
+    }
+
     public static void Reveal(string path)
     {
         var fullPath = ValidatePath(path);
@@ -32,6 +38,23 @@ public static class LinuxDesktopActions
             UseShellExecute = false,
             CreateNoWindow = true
         };
+        info.ArgumentList.Add(fullPath);
+        return info;
+    }
+
+    public static ProcessStartInfo BuildLaunchApplicationStartInfo(string desktopFile)
+    {
+        var fullPath = ValidatePath(desktopFile);
+        if (!fullPath.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Application launcher must be a .desktop file.", nameof(desktopFile));
+
+        var info = new ProcessStartInfo
+        {
+            FileName = "gio",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        info.ArgumentList.Add("launch");
         info.ArgumentList.Add(fullPath);
         return info;
     }
