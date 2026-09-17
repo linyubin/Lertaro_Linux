@@ -16,6 +16,12 @@ public sealed record LinuxDaemonSearchItem(
     long Size,
     int Score);
 
+public sealed record LinuxDaemonApplicationItem(
+    string DesktopId,
+    string Name,
+    string? Icon,
+    string DesktopFile);
+
 public sealed record LinuxDaemonStatus(
     string Root,
     string IndexPath,
@@ -27,7 +33,8 @@ public sealed record LinuxDaemonResponse(
     string? Error = null,
     IReadOnlyList<LinuxDaemonSearchItem>? Results = null,
     LinuxDaemonStatus? Status = null,
-    IReadOnlyList<string>? Bookmarks = null);
+    IReadOnlyList<string>? Bookmarks = null,
+    IReadOnlyList<LinuxDaemonApplicationItem>? Applications = null);
 
 public static class LinuxDaemonProtocol
 {
