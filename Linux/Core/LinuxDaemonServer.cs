@@ -8,6 +8,7 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
     private readonly HashSet<Task> _clientTasks = [];
     private readonly LinuxMutableIndex _index;
     private readonly LinuxIndexWatcher _watcher;
+    private readonly LinuxBookmarks _bookmarks;
     private readonly string _indexPath;
     private readonly CancellationTokenSource _shutdown = new();
     private Socket? _listener;
@@ -15,16 +16,19 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
     public LinuxDaemonServer(
         LinuxMutableIndex index,
         LinuxIndexWatcher watcher,
+        LinuxBookmarks bookmarks,
         string indexPath,
         string socketPath)
     {
         ArgumentNullException.ThrowIfNull(index);
         ArgumentNullException.ThrowIfNull(watcher);
+        ArgumentNullException.ThrowIfNull(bookmarks);
         ArgumentException.ThrowIfNullOrWhiteSpace(indexPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(socketPath);
 
         _index = index;
         _watcher = watcher;
+        _bookmarks = bookmarks;
         _indexPath = Path.GetFullPath(indexPath);
         SocketPath = Path.GetFullPath(socketPath);
     }
@@ -103,10 +107,7 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
             {
                 try
                 {
-                    await LinuxDaemonProtocol.WriteAsync(
-                        stream,
-                        new LinuxDaemonResponse(false, ex.Message),
-                        CancellationToken.None);
+                    await LinuxDaemonProtocol.WriteAsync(stream, new LinuxDaemonResponse(false, ex.Message), CancellationToken.None);
                 }
                 catch
                 {
@@ -124,6 +125,9 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
             "search" => (Search(request), false),
             "status" => (StatusResponse(), false),
             "rebuild" => (Rebuild(), false),
+            "bookmark-list" => (BookmarkList(), false),
+            "bookmark-add" => (BookmarkAdd(request), false),
+            "bookmark-remove" => (BookmarkRemove(request), false),
             "shutdown" => (new LinuxDaemonResponse(true), true),
             _ => (new LinuxDaemonResponse(false, $"Unknown daemon command: {request.Command}"), false)
         };
@@ -137,12 +141,7 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
             return new LinuxDaemonResponse(false, "Search limit must be between 1 and 200.");
 
         var results = LinuxFuzzySearch.Search(_index.GetEntries(), request.Query, request.Limit)
-            .Select(result => new LinuxDaemonSearchItem(
-                result.Entry.Path,
-                result.Entry.Name,
-                result.Entry.IsDirectory,
-                result.Entry.Size,
-                result.Score))
+            .Select(result => new LinuxDaemonSearchItem(result.Entry.Path, result.Entry.Name, result.Entry.IsDirectory, result.Entry.Size, result.Score))
             .ToArray();
         return new LinuxDaemonResponse(true, Results: results);
     }
@@ -154,75 +153,64 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
         return StatusResponse();
     }
 
+    private LinuxDaemonResponse BookmarkList() =>
+        new(true, Bookmarks: _bookmarks.Paths.Order(StringComparer.Ordinal).ToArray());
+
+    private LinuxDaemonResponse BookmarkAdd(LinuxDaemonRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Path))
+            return new LinuxDaemonResponse(false, "Bookmark path must not be empty.");
+        _bookmarks.Add(request.Path);
+        return BookmarkList();
+    }
+
+    private LinuxDaemonResponse BookmarkRemove(LinuxDaemonRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Path))
+            return new LinuxDaemonResponse(false, "Bookmark path must not be empty.");
+        _bookmarks.Remove(request.Path);
+        return BookmarkList();
+    }
+
     private LinuxDaemonResponse StatusResponse() =>
-        new(
-            true,
-            Status: new LinuxDaemonStatus(
-                _index.Root,
-                _indexPath,
-                _index.Count,
-                _watcher.LastError?.Message));
+        new(true, Status: new LinuxDaemonStatus(_index.Root, _indexPath, _index.Count, _watcher.LastError?.Message));
 
     private void TrackClient(Task task)
     {
-        lock (_clientsSync)
-            _clientTasks.Add(task);
-        _ = task.ContinueWith(
-            completed =>
-            {
-                lock (_clientsSync)
-                    _clientTasks.Remove(completed);
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
+        lock (_clientsSync) _clientTasks.Add(task);
+        _ = task.ContinueWith(completed =>
+        {
+            lock (_clientsSync) _clientTasks.Remove(completed);
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
     }
 
     private async Task AwaitClientsAsync()
     {
         Task[] tasks;
-        lock (_clientsSync)
-            tasks = [.. _clientTasks];
-        if (tasks.Length == 0)
-            return;
-        try
-        {
-            await Task.WhenAll(tasks);
-        }
-        catch
-        {
-            // Each client task contains its own protocol/I/O error boundary.
-        }
+        lock (_clientsSync) tasks = [.. _clientTasks];
+        if (tasks.Length == 0) return;
+        try { await Task.WhenAll(tasks); }
+        catch { }
     }
 
     private void PrepareSocketDirectory()
     {
-        var directory = Path.GetDirectoryName(SocketPath)
-            ?? throw new InvalidOperationException("Socket path has no parent directory.");
+        var directory = Path.GetDirectoryName(SocketPath) ?? throw new InvalidOperationException("Socket path has no parent directory.");
         Directory.CreateDirectory(directory);
         if (OperatingSystem.IsLinux())
-        {
-            File.SetUnixFileMode(
-                directory,
-                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 
     private async Task RemoveStaleSocketAsync(CancellationToken cancellationToken)
     {
-        if (!Path.Exists(SocketPath))
-            return;
-
+        if (!Path.Exists(SocketPath)) return;
         using var probe = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
         try
         {
             await probe.ConnectAsync(new UnixDomainSocketEndPoint(SocketPath), cancellationToken);
             throw new IOException($"Another Lertaro daemon is already listening at {SocketPath}.");
         }
-        catch (SocketException)
-        {
-            File.Delete(SocketPath);
-        }
+        catch (SocketException) { File.Delete(SocketPath); }
     }
 
     private void RestrictSocketPermissions()
@@ -233,16 +221,9 @@ public sealed class LinuxDaemonServer : IAsyncDisposable
 
     private void DeleteSocketPath()
     {
-        try
-        {
-            File.Delete(SocketPath);
-        }
-        catch (IOException)
-        {
-        }
-        catch (UnauthorizedAccessException)
-        {
-        }
+        try { File.Delete(SocketPath); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static bool IsClientError(Exception ex) =>
