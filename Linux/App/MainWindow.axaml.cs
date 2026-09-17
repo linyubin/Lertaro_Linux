@@ -7,7 +7,7 @@ using Lertaro.Linux.Core;
 
 namespace Lertaro.Linux.App;
 
-public sealed class MainWindow : Window
+public sealed partial class MainWindow : Window
 {
     private readonly ObservableCollection<LinuxDaemonSearchItem> _results = [];
     private readonly LinuxDaemonClient _client;
@@ -23,10 +23,6 @@ public sealed class MainWindow : Window
         _client = new LinuxDaemonClient(socketPath);
         Opened += (_, _) => QueryBox.Focus();
     }
-
-    private TextBox QueryBox => this.FindControl<TextBox>("QueryBox")!;
-    private ListBox ResultsList => this.FindControl<ListBox>("ResultsList")!;
-    private TextBlock StatusText => this.FindControl<TextBlock>("StatusText")!;
 
     private async void OnQueryChanged(object? sender, TextChangedEventArgs args)
     {
