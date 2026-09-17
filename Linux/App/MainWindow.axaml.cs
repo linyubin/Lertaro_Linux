@@ -9,7 +9,7 @@ namespace Lertaro.Linux.App;
 
 public sealed partial class MainWindow : Window
 {
-    private readonly ObservableCollection<LinuxDaemonSearchItem> _results = [];
+    private readonly ObservableCollection<LinuxDesktopResult> _results = [];
     private readonly LinuxDaemonClient _client;
     private int _searchGeneration;
 
@@ -27,18 +27,21 @@ public sealed partial class MainWindow : Window
     private async void OnQueryChanged(object? sender, TextChangedEventArgs args)
     {
         var generation = Interlocked.Increment(ref _searchGeneration);
-        var query = QueryBox.Text?.Trim() ?? string.Empty;
-        if (query.Length == 0)
+        var rawQuery = QueryBox.Text?.Trim() ?? string.Empty;
+        if (rawQuery.Length == 0)
         {
             _results.Clear();
-            StatusText.Text = "Type to search the live Linux index.";
+            StatusText.Text = "Type to search files, or prefix with > to launch applications.";
             return;
         }
 
-        StatusText.Text = "Searching…";
+        var applicationMode = rawQuery.StartsWith('>');
+        var query = applicationMode ? rawQuery[1..].Trim() : rawQuery;
+        StatusText.Text = applicationMode ? "Searching applications…" : "Searching…";
         try
         {
-            var response = await _client.SendAsync(new LinuxDaemonRequest("search", query, 80));
+            var command = applicationMode ? "application-list" : "search";
+            var response = await _client.SendAsync(new LinuxDaemonRequest(command, query, 80));
             if (generation != Volatile.Read(ref _searchGeneration))
                 return;
             if (!response.Ok)
@@ -48,8 +51,17 @@ public sealed partial class MainWindow : Window
             }
 
             _results.Clear();
-            foreach (var result in response.Results ?? [])
-                _results.Add(result);
+            if (applicationMode)
+            {
+                foreach (var application in response.Applications ?? [])
+                    _results.Add(LinuxDesktopResult.FromApplication(application));
+            }
+            else
+            {
+                foreach (var result in response.Results ?? [])
+                    _results.Add(LinuxDesktopResult.FromSearch(result));
+            }
+
             if (_results.Count > 0)
                 ResultsList.SelectedIndex = 0;
             StatusText.Text = $"{_results.Count} result{(_results.Count == 1 ? string.Empty : "s")}";
@@ -96,18 +108,28 @@ public sealed partial class MainWindow : Window
 
     private void ActivateSelected(bool reveal)
     {
-        if (ResultsList.SelectedItem is not LinuxDaemonSearchItem item)
+        if (ResultsList.SelectedItem is not LinuxDesktopResult item)
             return;
 
         try
         {
-            if (reveal && !item.IsDirectory)
-                LinuxDesktopActions.Reveal(item.Path);
+            if (item.Kind == LinuxDesktopResultKind.Application)
+            {
+                LinuxDesktopActions.LaunchApplication(item.Target);
+                StatusText.Text = "Launched application.";
+            }
+            else if (reveal && !item.IsDirectory)
+            {
+                LinuxDesktopActions.Reveal(item.Target);
+                StatusText.Text = "Opened containing folder.";
+            }
             else
-                LinuxDesktopActions.Open(item.Path);
-            StatusText.Text = reveal ? "Opened containing folder." : "Opened selection.";
+            {
+                LinuxDesktopActions.Open(item.Target);
+                StatusText.Text = "Opened selection.";
+            }
         }
-        catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
+        catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception or ArgumentException)
         {
             StatusText.Text = ex.Message;
         }
