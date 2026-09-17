@@ -1,0 +1,29 @@
+name: Linux Port CI
+
+on:
+  push:
+    branches: [linux-port]
+    paths:
+      - 'Linux/**'
+      - 'Core/SearchIndex/Fzf/**'
+      - '.github/workflows/linux-ci.yml'
+  pull_request:
+    paths:
+      - 'Linux/**'
+      - 'Core/SearchIndex/Fzf/**'
+      - '.github/workflows/linux-ci.yml'
+
+jobs:
+  linux-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build Linux CLI
+        run: dotnet build Linux/Cli/Linux.Cli.csproj --configuration Release
+      - name: Run Linux tests
+        run: dotnet test Linux/Tests/Linux.Tests.csproj --configuration Release
+      - name: Smoke test CLI
+        run: dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release -- Linux lertaro 10
