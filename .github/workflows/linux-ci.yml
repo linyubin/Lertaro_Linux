@@ -139,3 +139,21 @@ jobs:
           dpkg-deb --contents "$package" | grep 'usr/lib/lertaro/lertarod'
           dpkg-deb --contents "$package" | grep 'usr/lib/systemd/user/lertaro.service'
           dpkg-deb --contents "$package" | grep 'usr/share/applications/lertaro.desktop'
+      - name: Smoke test installed Debian package
+        if: matrix.runtime == 'linux-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          package="$(find artifacts/deb -name '*.deb' -print -quit)"
+          sudo dpkg --install "$package"
+          test -x /usr/bin/lertaro
+          test -x /usr/bin/lertaro-ui
+          test -x /usr/lib/lertaro/lertarod
+          test -f /usr/lib/systemd/user/lertaro.service
+          test -f /usr/share/applications/lertaro.desktop
+          lertaro /usr/lib/lertaro lertarod 5 | grep 'lertarod'
+          sudo dpkg --remove lertaro
+          test ! -e /usr/bin/lertaro
+          test ! -e /usr/bin/lertaro-ui
+          test ! -e /usr/lib/systemd/user/lertaro.service
+          test ! -e /usr/share/applications/lertaro.desktop
