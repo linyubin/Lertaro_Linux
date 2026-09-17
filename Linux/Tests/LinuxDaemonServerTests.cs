@@ -7,7 +7,7 @@ namespace Lertaro.Linux.Tests;
 public sealed class LinuxDaemonServerTests
 {
     [TestMethod]
-    [Timeout(20_000)]
+    [Timeout(20_000, CooperativeCancellation = true)]
     public async Task Server_HandlesStatusSearchRebuildAndShutdown()
     {
         var workspace = CreateTempDirectory();
@@ -82,7 +82,7 @@ public sealed class LinuxDaemonServerTests
 
     private static string CreateTempDirectory()
     {
-        var path = Path.Combine(Path.GetTempPath(), "lertaro-daemon-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(Path.GetTempPath(), "lertaro-linux-daemon-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         return path;
     }
