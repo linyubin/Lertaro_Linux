@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Lertaro
+Comment=Fast local file search
+Exec=lertaro-ui
+Terminal=false
+Categories=Utility;FileManager;
+StartupNotify=true

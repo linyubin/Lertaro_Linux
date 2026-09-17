@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Lertaro.Linux.App.MainWindow"
+        Title="Lertaro"
+        Width="760"
+        Height="520"
+        MinWidth="560"
+        MinHeight="360"
+        WindowStartupLocation="CenterScreen">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16" RowSpacing="12">
+        <TextBox x:Name="QueryBox"
+                 FontSize="20"
+                 Watermark="Search files and folders"
+                 TextChanged="OnQueryChanged"
+                 KeyDown="OnQueryKeyDown" />
+
+        <ListBox x:Name="ResultsList"
+                 Grid.Row="1"
+                 KeyDown="OnResultsKeyDown"
+                 DoubleTapped="OnResultsDoubleTapped">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid RowDefinitions="Auto,Auto" Margin="4,6">
+                        <TextBlock Text="{Binding Name}" FontSize="15" />
+                        <TextBlock Grid.Row="1"
+                                   Text="{Binding Path}"
+                                   FontSize="12"
+                                   Opacity="0.65"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock x:Name="StatusText"
+                   Grid.Row="2"
+                   Opacity="0.7"
+                   Text="Type to search the live Linux index." />
+    </Grid>
+</Window>

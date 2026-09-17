@@ -25,8 +25,10 @@ jobs:
         run: dotnet build Linux/Cli/Linux.Cli.csproj --configuration Release
       - name: Build Linux daemon
         run: dotnet build Linux/Daemon/Linux.Daemon.csproj --configuration Release
+      - name: Build Linux desktop app
+        run: dotnet build Linux/App/Linux.App.csproj --configuration Release
       - name: Run Linux tests
-        run: dotnet test Linux/Tests/Linux.Tests.csproj --configuration Release --no-restore
+        run: dotnet test Linux/Tests/Linux.Tests.csproj --configuration Release
       - name: Smoke test direct scan
         run: dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- Linux lertaro 10
       - name: Smoke test persistent index
