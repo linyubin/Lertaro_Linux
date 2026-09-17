@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="using:Lertaro.Linux.Core"
         x:Class="Lertaro.Linux.App.MainWindow"
         Title="Lertaro"
         Width="760"
@@ -10,7 +11,7 @@
     <Grid RowDefinitions="Auto,*,Auto" Margin="16" RowSpacing="12">
         <TextBox x:Name="QueryBox"
                  FontSize="20"
-                 Watermark="Search files and folders"
+                 PlaceholderText="Search files and folders"
                  TextChanged="OnQueryChanged"
                  KeyDown="OnQueryKeyDown" />
 
@@ -19,7 +20,7 @@
                  KeyDown="OnResultsKeyDown"
                  DoubleTapped="OnResultsDoubleTapped">
             <ListBox.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="core:LinuxDaemonSearchItem">
                     <Grid RowDefinitions="Auto,Auto" Margin="4,6">
                         <TextBlock Text="{Binding Name}" FontSize="15" />
                         <TextBlock Grid.Row="1"
