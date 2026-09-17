@@ -72,6 +72,9 @@ jobs:
             sleep 0.05
           done
           test "$found" -eq 1 || { cat "$workspace/daemon.log"; exit 1; }
+          dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- bookmark-add "$workspace/root/calibration-report.txt" | grep 'calibration-report.txt'
+          dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- bookmark-list | grep 'calibration-report.txt'
+          test -z "$(dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- bookmark-remove "$workspace/root/calibration-report.txt")"
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-rebuild >/dev/null
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-shutdown >/dev/null
           wait "$daemon_pid"
