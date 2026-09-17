@@ -102,4 +102,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -x "artifacts/${{ matrix.runtime }}/${{ matrix.project }}/Lertaro.Linux.${{ matrix.project }}"
+          case "${{ matrix.project }}" in
+            Cli) executable="lertaro-linux" ;;
+            Daemon) executable="lertarod" ;;
+            App) executable="lertaro-ui" ;;
+          esac
+          test -x "artifacts/${{ matrix.runtime }}/${{ matrix.project }}/$executable"
