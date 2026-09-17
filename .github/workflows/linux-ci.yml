@@ -76,3 +76,27 @@ jobs:
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-shutdown >/dev/null
           wait "$daemon_pid"
           trap - EXIT
+
+  linux-publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runtime: [linux-x64, linux-arm64]
+        project: [Cli, Daemon, App]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish ${{ matrix.project }} for ${{ matrix.runtime }}
+        run: >-
+          dotnet publish Linux/${{ matrix.project }}/Linux.${{ matrix.project }}.csproj
+          --configuration Release
+          --runtime ${{ matrix.runtime }}
+          --self-contained true
+          --output artifacts/${{ matrix.runtime }}/${{ matrix.project }}
+      - name: Verify native launcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "artifacts/${{ matrix.runtime }}/${{ matrix.project }}/Lertaro.Linux.${{ matrix.project }}"
