@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Lertaro.Linux.Core</AssemblyName>
+    <RootNamespace>Lertaro.Linux.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfAlgorithm.cs" Link="SearchIndex\Fzf\FzfAlgorithm.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfBacktrack.cs" Link="SearchIndex\Fzf\FzfBacktrack.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfCharTables.cs" Link="SearchIndex\Fzf\FzfCharTables.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfExactMatcher.cs" Link="SearchIndex\Fzf\FzfExactMatcher.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfFuzzyMatcher.cs" Link="SearchIndex\Fzf\FzfFuzzyMatcher.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfScoring.cs" Link="SearchIndex\Fzf\FzfScoring.cs" />
+    <Compile Include="..\..\Core\SearchIndex\Fzf\FzfSlab.cs" Link="SearchIndex\Fzf\FzfSlab.cs" />
+  </ItemGroup>
+</Project>
