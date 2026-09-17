@@ -26,8 +26,8 @@ public sealed class LinuxDesktopActionsTests
         var info = LinuxDesktopActions.BuildRevealStartInfo(path);
 
         Assert.AreEqual("gdbus", info.FileName);
-        Assert.Contains(info.ArgumentList, "org.freedesktop.FileManager1");
-        Assert.Contains(info.ArgumentList, "org.freedesktop.FileManager1.ShowItems");
+        Assert.Contains("org.freedesktop.FileManager1", info.ArgumentList);
+        Assert.Contains("org.freedesktop.FileManager1.ShowItems", info.ArgumentList);
         Assert.IsTrue(info.ArgumentList.Any(argument => argument.Contains(new Uri(path).AbsoluteUri, StringComparison.Ordinal)));
     }
 }
