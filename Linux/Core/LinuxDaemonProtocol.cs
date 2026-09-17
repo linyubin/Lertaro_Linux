@@ -3,7 +3,11 @@ using System.Text.Json;
 
 namespace Lertaro.Linux.Core;
 
-public sealed record LinuxDaemonRequest(string Command, string? Query = null, int Limit = 50);
+public sealed record LinuxDaemonRequest(
+    string Command,
+    string? Query = null,
+    int Limit = 50,
+    string? Path = null);
 
 public sealed record LinuxDaemonSearchItem(
     string Path,
@@ -22,7 +26,8 @@ public sealed record LinuxDaemonResponse(
     bool Ok,
     string? Error = null,
     IReadOnlyList<LinuxDaemonSearchItem>? Results = null,
-    LinuxDaemonStatus? Status = null);
+    LinuxDaemonStatus? Status = null,
+    IReadOnlyList<string>? Bookmarks = null);
 
 public static class LinuxDaemonProtocol
 {
