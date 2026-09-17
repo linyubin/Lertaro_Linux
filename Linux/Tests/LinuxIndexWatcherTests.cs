@@ -6,7 +6,7 @@ namespace Lertaro.Linux.Tests;
 public sealed class LinuxIndexWatcherTests
 {
     [TestMethod]
-    [Timeout(15_000)]
+    [Timeout(15_000, CooperativeCancellation = true)]
     public async Task Watcher_TracksCreateRenameDeleteAndPersists()
     {
         var workspace = CreateTempDirectory();
