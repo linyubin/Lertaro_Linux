@@ -25,7 +25,7 @@ This step intentionally discovers launchable applications but does not execute t
 
 ## Validation
 
-The changed source and test files are below the repository's 300-line limit. `Linux/Tests/Linux.Tests.csproj` is the narrow test target. Ubuntu CI will build and run this project after the commit; any failure blocks further Stage 7 work.
+The changed source and test files are below the repository's 300-line limit. `Linux/Tests/Linux.Tests.csproj` is the narrow test target. Ubuntu CI is the authoritative build/test environment because this automation runtime has no outbound Git clone access; any CI failure blocks further Stage 7 work.
 
 ## Next
 
