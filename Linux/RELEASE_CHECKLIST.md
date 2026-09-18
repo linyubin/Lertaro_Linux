@@ -43,7 +43,7 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 - [x] Search history/recent results.
 - [x] Persistent bookmarks/favorites with CLI/daemon/UI integration.
 - [x] Linux application catalog/launcher with daemon/UI integration.
-- [ ] Plugin boundary review completed and the supported cross-platform subset documented.
+- [x] Plugin boundary review completed and the supported cross-platform subset documented in `Linux/PLUGIN_COMPATIBILITY.md`.
 
 ## Documentation and release
 
