@@ -6,7 +6,7 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 
 - [x] Linux Core, CLI, Daemon, App and targeted MSTest projects build/test on Ubuntu CI.
 - [x] Release-built Avalonia application starts under an X11 display (Xvfb smoke gate).
-- [ ] Final formal release test matrix passes from the release candidate commit.
+- [x] Final formal release test matrix passes from release candidate commit `53a7f0261d7441b58c84c4d57137702db3051b37` in Linux Port CI run #55.
 
 ## Runtime and recovery
 
@@ -50,6 +50,6 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 - [x] User-facing Ubuntu install/start/uninstall instructions are complete in `Linux/README.md`.
 - [x] Known limitations are documented in `Linux/README.md` and `Linux/PLUGIN_COMPATIBILITY.md`.
 - [x] `DevelopmentLogs/ROADMAP.md` reflects actual stage status.
-- [ ] Final release acceptance log records the exact CI run/commit used for sign-off.
+- [ ] Final release acceptance log records the exact CI run/commit used for sign-off after the required desktop-environment checks are closed.
 
 Do not declare the Ubuntu port complete while any required item above remains unchecked.
