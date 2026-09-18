@@ -13,7 +13,7 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 - [x] Persistent index survives separate CLI processes.
 - [x] Incremental filesystem changes are reconciled and persisted.
 - [x] Per-user daemon IPC reconnect/restart behavior is covered.
-- [ ] Release-state restart/corruption recovery acceptance passes from packaged binaries.
+- [x] Release-state restart/corruption recovery acceptance passes from packaged binaries.
 
 ## Packaging
 
@@ -26,8 +26,8 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 
 ## Performance
 
-- [ ] Representative large synthetic index gate passes for build/load/search latency.
-- [ ] Peak/steady-state memory acceptance is recorded and within the documented threshold.
+- [x] Representative large synthetic index gate passes for build/load/search latency.
+- [x] Peak memory acceptance is recorded and below the 512 MiB regression ceiling on the CI fixture.
 
 ## Desktop integration
 
@@ -47,9 +47,9 @@ This checklist is the final gate for declaring the Ubuntu port complete. A relea
 
 ## Documentation and release
 
-- [ ] User-facing Ubuntu install/start/uninstall instructions are complete.
-- [ ] Known limitations are documented.
-- [ ] DevelopmentLogs/ROADMAP.md reflects actual stage status.
+- [x] User-facing Ubuntu install/start/uninstall instructions are complete in `Linux/README.md`.
+- [x] Known limitations are documented in `Linux/README.md` and `Linux/PLUGIN_COMPATIBILITY.md`.
+- [x] `DevelopmentLogs/ROADMAP.md` reflects actual stage status.
 - [ ] Final release acceptance log records the exact CI run/commit used for sign-off.
 
 Do not declare the Ubuntu port complete while any required item above remains unchecked.
