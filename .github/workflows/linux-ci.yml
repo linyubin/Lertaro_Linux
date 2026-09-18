@@ -237,6 +237,8 @@ jobs:
           test -x /usr/lib/lertaro/lertarod
           test -f /usr/lib/systemd/user/lertaro.service
           test -f /usr/share/applications/lertaro.desktop
+          systemd-analyze verify --user /usr/lib/systemd/user/lertaro.service
+          grep -Fx 'ExecStart=/usr/lib/lertaro/lertarod' /usr/lib/systemd/user/lertaro.service
           lertaro /usr/lib/lertaro lertarod 5 | grep 'lertarod'
 
           workspace="$(mktemp -d)"
