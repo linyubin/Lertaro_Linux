@@ -114,6 +114,41 @@ jobs:
           dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- daemon-search restartsurvivor 10 | grep 'restart-survivor.txt'
           stop_daemon
           test -s "$index"
+      - name: Acceptance test large-index performance and memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$(mktemp -d)"
+          root="$workspace/root"
+          index="$workspace/index.bin"
+          mkdir -p "$root"
+          python3 - "$root" <<'PY'
+          import os
+          import sys
+
+          root = sys.argv[1]
+          for directory in range(100):
+              path = os.path.join(root, f"sensor-{directory:03d}")
+              os.makedirs(path)
+              for item in range(500):
+                  open(os.path.join(path, f"capture-{directory:03d}-{item:03d}.pcd"), "a").close()
+          PY
+
+          index_start=$(date +%s%3N)
+          /usr/bin/time -f '%M' -o "$workspace/index-rss-kb" dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- index "$root" "$index" >/dev/null
+          index_ms=$(( $(date +%s%3N) - index_start ))
+
+          search_start=$(date +%s%3N)
+          /usr/bin/time -f '%M' -o "$workspace/search-rss-kb" dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- search "$index" capture099499 10 | grep 'capture-099-499.pcd'
+          search_ms=$(( $(date +%s%3N) - search_start ))
+
+          index_rss_kb=$(cat "$workspace/index-rss-kb")
+          search_rss_kb=$(cat "$workspace/search-rss-kb")
+          echo "50k files: index=${index_ms}ms rss=${index_rss_kb}KB; search=${search_ms}ms rss=${search_rss_kb}KB"
+          test "$index_ms" -lt 30000
+          test "$search_ms" -lt 3000
+          test "$index_rss_kb" -lt 524288
+          test "$search_rss_kb" -lt 524288
 
   linux-publish:
     runs-on: ubuntu-latest
