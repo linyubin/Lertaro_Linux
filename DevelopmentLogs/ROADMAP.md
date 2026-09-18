@@ -79,7 +79,9 @@ Status: in progress.
 
 ## Stage 8 — Packaging and release acceptance
 
-Status: not started.
+Status: in progress.
+
+Completed acceptance work already includes self-contained x64/arm64 publish, Debian packaging/archive validation, real x64 package install/search/uninstall smoke testing, and graphical Avalonia startup under Xvfb. Remaining release gates are tracked in `Linux/RELEASE_CHECKLIST.md`.
 
 - self-contained x64 and arm64 Linux publish;
 - `.deb` packaging first, additional packaging only when justified;
