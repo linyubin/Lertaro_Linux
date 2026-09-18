@@ -280,3 +280,22 @@ jobs:
           test ! -e /usr/bin/lertaro-ui
           test ! -e /usr/lib/systemd/user/lertaro.service
           test ! -e /usr/share/applications/lertaro.desktop
+
+  release-matrix:
+    name: Formal release matrix gate
+    if: ${{ always() }}
+    needs: [linux-core, linux-publish, linux-deb]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all Linux release jobs
+        env:
+          CORE_RESULT: ${{ needs.linux-core.result }}
+          PUBLISH_RESULT: ${{ needs.linux-publish.result }}
+          DEB_RESULT: ${{ needs.linux-deb.result }}
+        run: |
+          set -euo pipefail
+          echo "release candidate: $GITHUB_SHA"
+          echo "linux-core=$CORE_RESULT linux-publish=$PUBLISH_RESULT linux-deb=$DEB_RESULT"
+          test "$CORE_RESULT" = success
+          test "$PUBLISH_RESULT" = success
+          test "$DEB_RESULT" = success
