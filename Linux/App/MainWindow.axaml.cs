@@ -11,33 +11,42 @@ public sealed partial class MainWindow : Window
 {
     private readonly ObservableCollection<LinuxDesktopResult> _results = [];
     private readonly LinuxDaemonClient _client;
+    private readonly TextBox _queryBox;
+    private readonly ListBox _resultsList;
+    private readonly TextBlock _statusText;
     private int _searchGeneration;
 
     public MainWindow()
     {
         AvaloniaXamlLoader.Load(this);
-        ResultsList.ItemsSource = _results;
+        _queryBox = this.FindControl<TextBox>("QueryBox")
+            ?? throw new InvalidOperationException("QueryBox was not created from MainWindow XAML.");
+        _resultsList = this.FindControl<ListBox>("ResultsList")
+            ?? throw new InvalidOperationException("ResultsList was not created from MainWindow XAML.");
+        _statusText = this.FindControl<TextBlock>("StatusText")
+            ?? throw new InvalidOperationException("StatusText was not created from MainWindow XAML.");
+        _resultsList.ItemsSource = _results;
         var socketPath = Environment.GetEnvironmentVariable("LERTARO_SOCKET");
         if (string.IsNullOrWhiteSpace(socketPath))
             socketPath = LinuxDaemonPaths.CreateDefault().SocketPath;
         _client = new LinuxDaemonClient(socketPath);
-        Opened += (_, _) => QueryBox.Focus();
+        Opened += (_, _) => _queryBox.Focus();
     }
 
     private async void OnQueryChanged(object? sender, TextChangedEventArgs args)
     {
         var generation = Interlocked.Increment(ref _searchGeneration);
-        var rawQuery = QueryBox.Text?.Trim() ?? string.Empty;
+        var rawQuery = _queryBox.Text?.Trim() ?? string.Empty;
         if (rawQuery.Length == 0)
         {
             _results.Clear();
-            StatusText.Text = "Type to search files, or prefix with > to launch applications.";
+            _statusText.Text = "Type to search files, or prefix with > to launch applications.";
             return;
         }
 
         var applicationMode = rawQuery.StartsWith('>');
         var query = applicationMode ? rawQuery[1..].Trim() : rawQuery;
-        StatusText.Text = applicationMode ? "Searching applications…" : "Searching…";
+        _statusText.Text = applicationMode ? "Searching applications…" : "Searching…";
         try
         {
             var command = applicationMode ? "application-list" : "search";
@@ -46,7 +55,7 @@ public sealed partial class MainWindow : Window
                 return;
             if (!response.Ok)
             {
-                StatusText.Text = response.Error ?? "Search failed.";
+                _statusText.Text = response.Error ?? "Search failed.";
                 return;
             }
 
@@ -63,13 +72,13 @@ public sealed partial class MainWindow : Window
             }
 
             if (_results.Count > 0)
-                ResultsList.SelectedIndex = 0;
-            StatusText.Text = $"{_results.Count} result{(_results.Count == 1 ? string.Empty : "s")}";
+                _resultsList.SelectedIndex = 0;
+            _statusText.Text = $"{_results.Count} result{(_results.Count == 1 ? string.Empty : "s")}";
         }
         catch (Exception ex) when (ex is IOException or System.Net.Sockets.SocketException)
         {
             if (generation == Volatile.Read(ref _searchGeneration))
-                StatusText.Text = $"Daemon unavailable: {ex.Message}";
+                _statusText.Text = $"Daemon unavailable: {ex.Message}";
         }
     }
 
@@ -77,8 +86,8 @@ public sealed partial class MainWindow : Window
     {
         if (args.Key == Key.Down && _results.Count > 0)
         {
-            ResultsList.SelectedIndex = Math.Max(0, ResultsList.SelectedIndex);
-            ResultsList.Focus();
+            _resultsList.SelectedIndex = Math.Max(0, _resultsList.SelectedIndex);
+            _resultsList.Focus();
             args.Handled = true;
             return;
         }
@@ -99,7 +108,7 @@ public sealed partial class MainWindow : Window
         }
         else if (args.Key == Key.Escape)
         {
-            QueryBox.Focus();
+            _queryBox.Focus();
             args.Handled = true;
         }
     }
@@ -108,7 +117,7 @@ public sealed partial class MainWindow : Window
 
     private void ActivateSelected(bool reveal)
     {
-        if (ResultsList.SelectedItem is not LinuxDesktopResult item)
+        if (_resultsList.SelectedItem is not LinuxDesktopResult item)
             return;
 
         try
@@ -116,22 +125,22 @@ public sealed partial class MainWindow : Window
             if (item.Kind == LinuxDesktopResultKind.Application)
             {
                 LinuxDesktopActions.LaunchApplication(item.Target);
-                StatusText.Text = "Launched application.";
+                _statusText.Text = "Launched application.";
             }
             else if (reveal && !item.IsDirectory)
             {
                 LinuxDesktopActions.Reveal(item.Target);
-                StatusText.Text = "Opened containing folder.";
+                _statusText.Text = "Opened containing folder.";
             }
             else
             {
                 LinuxDesktopActions.Open(item.Target);
-                StatusText.Text = "Opened selection.";
+                _statusText.Text = "Opened selection.";
             }
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception or ArgumentException)
         {
-            StatusText.Text = ex.Message;
+            _statusText.Text = ex.Message;
         }
     }
 }
