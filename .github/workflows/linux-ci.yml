@@ -29,6 +29,22 @@ jobs:
         run: dotnet build Linux/App/Linux.App.csproj --configuration Release
       - name: Run Linux tests
         run: dotnet test Linux/Tests/Linux.Tests.csproj --configuration Release
+      - name: Smoke test graphical UI launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb
+          log="$(mktemp)"
+          set +e
+          timeout 5s xvfb-run -a dotnet Linux/App/bin/Release/net10.0/Linux.App.dll >"$log" 2>&1
+          status=$?
+          set -e
+          if [ "$status" -ne 124 ]; then
+            cat "$log"
+            echo "UI exited before the acceptance window (status=$status)"
+            exit 1
+          fi
       - name: Smoke test direct scan
         run: dotnet run --project Linux/Cli/Linux.Cli.csproj --configuration Release --no-build -- Linux lertaro 10
       - name: Smoke test persistent index
